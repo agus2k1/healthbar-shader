@@ -8,6 +8,7 @@ const fragmentShader = /* glsl */ `
     uniform float uColorStart;
     uniform float uColorEnd;
     uniform sampler2D uTexture;
+    uniform float uBorderSize;
 
     float InverseLerp( float a, float b, float v) {
         return (v-a)/(b-a);
@@ -39,20 +40,41 @@ const fragmentShader = /* glsl */ `
         vec3 texColor = tex.xyz;
 
         // 1e)
-        float opacity = 1.;
 
         if (uHealth <= uColorStart) {
-            opacity = abs(sin(uTime * 0.8));
+            float flash = cos(uTime * 1.7) * 0.4 + 1.;
+
+            color *= flash;
+            texColor *= flash;
         }
 
+        // Rounded corners
+        vec2 coords = vUv;
+        coords.x *= 8.;
+
+        vec2 pointOnLineSeg = vec2(clamp(coords.x, 0.5, 7.5), 0.5);
+
+        float sdf = distance(coords, pointOnLineSeg) * 2. - 1.;
+
+        if ( -sdf < 0.001) discard;
+
+        // Border
+        float borderSdf = sdf + uBorderSize;
+
+        float pd = fwidth(borderSdf); // screen space partial derivative
+
+        float borderMask = 1. - clamp(borderSdf / pd, 0., 1.);
+
         // Output
-        vec4 finalOut = vec4(color, healthbarMask * opacity);
+        vec4 finalOut = vec4(texColor * healthbarMask * borderMask, 1.);
         gl_FragColor = finalOut;
         // vec3 finalOut = mix(bgColor, color, healthbarMask);
         // gl_FragColor = vec4( finalOut, opacity);
         // gl_FragColor = vec4( vec3(t), 1.);
         // gl_FragColor = vec4( vec3(test), 1.);
         // gl_FragColor = tex;
+        // gl_FragColor = vec4(vec3(borderMask), 1.);
+
     }
 `;
 
