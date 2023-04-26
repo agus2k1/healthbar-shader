@@ -2,6 +2,7 @@ import './main.css';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import fragment from './shaders/fragment.glsl.js';
+import fragment1 from './shaders/fragment1.glsl.js';
 import vertex from './shaders/vertex.glsl.js';
 import GUI from 'lil-gui';
 import texture from './images/healthbar.png';
@@ -106,27 +107,43 @@ export default class Sketch {
         uColorStart: { value: 0 },
         uColorEnd: { value: 0 },
         uTexture: { value: new THREE.TextureLoader().load(texture) },
+        uBorderSize: { value: 0.5 },
       },
       fragmentShader: fragment,
       vertexShader: vertex,
       side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
+      blending: THREE.NormalBlending,
+      // transparent: true,
+      // depthWrite: false,
+      // depthTest: true,
     });
     this.geometry = new THREE.PlaneGeometry(1, 0.125, 10, 10);
 
     this.plane = new THREE.Mesh(this.geometry, this.material);
     this.scene.add(this.plane);
 
-    // Bk object
-    this.material1 = new THREE.MeshStandardMaterial();
+    // SDF object
+    this.material1 = new THREE.ShaderMaterial({
+      extensions: {
+        derivatives: '#extension GL_OES_standard_derivatives : enable',
+      },
+      uniforms: {
+        uTime: { value: 0 },
+        uResolution: { value: new THREE.Vector4() },
+      },
+      fragmentShader: fragment1,
+      vertexShader: vertex,
+      side: THREE.DoubleSide,
+      // blending: THREE.AdditiveBlending,
+      // transparent: true,
+      // depthWrite: false,
+      // depthTest: true,
+    });
     this.geometry1 = new THREE.PlaneGeometry(1, 1, 10, 10);
 
     this.test = new THREE.Mesh(this.geometry1, this.material1);
     this.test.position.z = -0.1;
-    this.scene.add(this.test);
+    // this.scene.add(this.test);
   }
 
   settings() {
@@ -134,11 +151,13 @@ export default class Sketch {
       health: 1,
       start: 0.2,
       end: 0.8,
+      border: 0.3,
     };
     this.gui = new GUI();
     this.gui.add(this.settings, 'health', 0, 1, 0.01);
     this.gui.add(this.settings, 'start', 0, 1, 0.1);
     this.gui.add(this.settings, 'end', 0, 1, 0.1);
+    this.gui.add(this.settings, 'border', 0, 0.8, 0.01);
   }
 
   render() {
@@ -147,6 +166,7 @@ export default class Sketch {
     this.material.uniforms.uHealth.value = this.settings.health;
     this.material.uniforms.uColorStart.value = this.settings.start;
     this.material.uniforms.uColorEnd.value = this.settings.end;
+    this.material.uniforms.uBorderSize.value = this.settings.border;
 
     this.renderer.render(this.scene, this.camera);
     window.requestAnimationFrame(this.render.bind(this));
