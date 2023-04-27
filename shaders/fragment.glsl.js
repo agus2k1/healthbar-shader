@@ -65,7 +65,7 @@ const fragmentShader = /* glsl */ `
 
         float borderMask = 1. - clamp(borderSdf / pd, 0., 1.);
 
-        // Output
+        // Outputº
         vec4 finalOut = vec4(texColor * healthbarMask * borderMask, 1.);
         gl_FragColor = finalOut;
         // vec3 finalOut = mix(bgColor, color, healthbarMask);
